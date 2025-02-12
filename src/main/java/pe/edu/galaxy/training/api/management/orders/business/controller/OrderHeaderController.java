@@ -12,9 +12,11 @@ import org.springframework.data.domain.Sort;
 import org.springframework.data.domain.Sort.Direction;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -22,7 +24,9 @@ import org.springframework.web.bind.annotation.RestController;
 
 import lombok.extern.slf4j.Slf4j;
 import pe.edu.galaxy.training.api.management.orders.business.dto.OrderHeaderDTO;
+import pe.edu.galaxy.training.api.management.orders.business.dto.ProductDTO;
 import pe.edu.galaxy.training.api.management.orders.business.dto.request.FindByLikeVoPageOrderHeaderRequestDTO;
+import pe.edu.galaxy.training.api.management.orders.business.dto.request.UpdateOrderStatusRequestDTO;
 import pe.edu.galaxy.training.api.management.orders.business.dto.vo.OrderHeaderVODTO;
 import pe.edu.galaxy.training.api.management.orders.business.service.OrderHeaderService;
 import pe.edu.galaxy.training.api.management.orders.business.service.ServiceException;
@@ -140,7 +144,7 @@ public class OrderHeaderController {
 				return ResponseEntity.badRequest().build();
 			}
 			
-			res.put("mensaje", String.format("El pedido fue registrado con exito, su codigo es %s",idOrder));
+			res.put("message", String.format("El pedido fue registrado con exito, su codigo es %s", idOrder));
 			
 			return new ResponseEntity<>(idOrder, HttpStatus.CREATED);
 
@@ -148,6 +152,42 @@ public class OrderHeaderController {
 			e.printStackTrace();
 			res.put("error", e.getMessage());
 			//res.put("error", "Error interno");
+			return ResponseEntity.internalServerError().body(res);
+		}
+	}
+	
+	@PutMapping("/{orderId}/status")
+	public ResponseEntity<Map<String, Object>> updateOrderStatus(
+	        @PathVariable Long orderId,
+	        @RequestBody UpdateOrderStatusRequestDTO updateOrderStatusRequestDTO) {
+
+	    Map<String, Object> res = new HashMap<>();
+
+	    try {
+	        orderHeadService.updateOrderStatus(orderId, updateOrderStatusRequestDTO);
+
+	        res.put("message", "Estado de la orden actualizado correctamente a: " + updateOrderStatusRequestDTO.getNewStatus());
+
+	        return ResponseEntity.ok(res);
+	    } catch (ServiceException e) {
+	        e.printStackTrace();
+	        res.put("error", "Error interno: " + e.getMessage()); // Devuelve un mensaje de error claro
+	        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(res);
+	    }
+	}
+
+	@DeleteMapping("/{id}")
+	ResponseEntity<?> delete(@PathVariable(value =  "id",required = true) Long id) {
+
+		log.info("Id => {}",id);
+		Map<String, Object> res = new HashMap<>();
+		try {
+			orderHeadService.delete(OrderHeaderDTO.builder().id(id).build());
+			res.put("message", "Exito al eliminar el pedido");
+			return new ResponseEntity<>(res, HttpStatus.OK);
+
+		} catch (ServiceException e) {
+			res.put("error", "Error interno");
 			return ResponseEntity.internalServerError().body(res);
 		}
 	}

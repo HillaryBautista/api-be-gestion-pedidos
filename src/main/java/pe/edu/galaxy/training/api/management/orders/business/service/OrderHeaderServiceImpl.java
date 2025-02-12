@@ -1,8 +1,12 @@
 package pe.edu.galaxy.training.api.management.orders.business.service;
 
 import java.util.List;
+import java.util.Map;
 import java.util.ArrayList;
 import java.util.Optional;
+import java.util.Set;
+import java.util.stream.Collectors;
+
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
@@ -18,23 +22,63 @@ import pe.edu.galaxy.training.api.management.orders.business.dto.OrderHeaderDTO;
 import pe.edu.galaxy.training.api.management.orders.business.dto.ProductDTO;
 import pe.edu.galaxy.training.api.management.orders.business.dto.VendorDTO;
 import pe.edu.galaxy.training.api.management.orders.business.dto.request.FindByLikeVoPageOrderHeaderRequestDTO;
+import pe.edu.galaxy.training.api.management.orders.business.dto.request.UpdateOrderStatusRequestDTO;
 import pe.edu.galaxy.training.api.management.orders.business.dto.vo.OrderHeaderVODTO;
+import pe.edu.galaxy.training.api.management.orders.business.entity.OrderDetailEntity;
 import pe.edu.galaxy.training.api.management.orders.business.entity.OrderHeaderEntity;
 import pe.edu.galaxy.training.api.management.orders.business.entity.OrderHeaderVOEntity;
+import pe.edu.galaxy.training.api.management.orders.business.entity.OrderLogsEntity;
+import pe.edu.galaxy.training.api.management.orders.business.entity.ProductEntity;
+import pe.edu.galaxy.training.api.management.orders.business.entity.StatusOrderEntity;
 import pe.edu.galaxy.training.api.management.orders.business.mapper.OrderHeaderMapper;
 import pe.edu.galaxy.training.api.management.orders.business.repository.OrderHeaderRepository;
+import pe.edu.galaxy.training.api.management.orders.business.repository.OrderLogsRepository;
+import pe.edu.galaxy.training.api.management.orders.business.repository.ProductRepository;
+import pe.edu.galaxy.training.api.management.orders.business.repository.StatusOrderRepository;
 import pe.edu.galaxy.training.api.management.orders.business.repository.vo.OrderHeaderVORepository;
 
 import static java.util.Objects.isNull;
+import java.util.HashMap;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 
 @Slf4j
 @Service
 public class OrderHeaderServiceImpl implements OrderHeaderService {
 
+	private static final Map<Integer, String> STATUS_MAP = Map.of(
+	    1, "Pendiente",
+	    2, "Procesando",
+	    3, "Enviada",
+	    4, "Entregada",
+	    5, "Cancelada",
+	    6, "Devuelta",
+	    7, "Reembolsada",
+	    8, "En espera",
+	    9, "Pagada"
+	);
+
+	private static final Map<String, Integer> STATUS_REVERSE_MAP = STATUS_MAP.entrySet()
+	        .stream()
+	        .collect(Collectors.toMap(Map.Entry::getValue, Map.Entry::getKey));
+
+	private static final Map<String, Set<String>> VALID_TRANSITIONS = new HashMap<>();
+
+	static {
+	    VALID_TRANSITIONS.put("Pendiente", Set.of("Procesando", "Cancelada", "En espera"));
+	    VALID_TRANSITIONS.put("Procesando", Set.of("Enviada", "Cancelada", "En espera"));
+	    VALID_TRANSITIONS.put("Enviada", Set.of("Entregada", "Devuelta"));
+	    VALID_TRANSITIONS.put("Devuelta", Set.of("Reembolsada", "Pendiente", "Procesando"));
+	    VALID_TRANSITIONS.put("En espera", Set.of("Pendiente", "Procesando"));
+	}
+
+	    
 	public final OrderHeaderRepository orderHeaderRepository;
 	private final OrderHeaderVORepository orderHeaderVORepository;
+    private final OrderLogsRepository orderLogsRepository;
+	public final ProductRepository productRepository;
+	public final StatusOrderRepository statusOrderRepository;
 
 	// public final ClienteRespository clienteRespository;
 
@@ -57,16 +101,22 @@ public class OrderHeaderServiceImpl implements OrderHeaderService {
 	public OrderHeaderServiceImpl(
 			OrderHeaderRepository orderHeaderRepository, 
 			OrderHeaderVORepository orderHeaderVORepository,
+			ProductRepository productRepository,
+			StatusOrderRepository statusOrderRepository,
 			ClientService clienteService,
 			VendorService vendorService, 
 			ProductService productoService, 
-			OrderHeaderMapper orderHeaderMapper) {
+			OrderHeaderMapper orderHeaderMapper,
+			OrderLogsRepository orderLogsRepository) {
 		this.orderHeaderRepository = orderHeaderRepository;
 		this.orderHeaderVORepository = orderHeaderVORepository;
+		this.productRepository = productRepository;
+		this.statusOrderRepository = statusOrderRepository;
 		this.orderHeaderMapper = orderHeaderMapper;
 		this.clientService = clienteService;
 		this.vendorService = vendorService;
 		this.productService = productoService;
+        this.orderLogsRepository = orderLogsRepository;
 	}
 	
 	@PostConstruct
@@ -145,34 +195,22 @@ public class OrderHeaderServiceImpl implements OrderHeaderService {
 
 			// Actualizar stock
 			this.updateStock(orderHeaderDTO.getOrderDetails());
+			
+			// Crear un log con estado "Pendiente"
+	        OrderLogsEntity orderLog = OrderLogsEntity.builder()
+	                .statusName("Pendiente")
+	                .comment("Se creó el pedido")
+	                .creationDate(LocalDateTime.now())
+	                .orderHeader(orderHeaderEntity)
+	                .build();
+
+	        orderLogsRepository.save(orderLog);
+			
 			return retOrderHeaderEntity.getId();
 
 		} catch (Exception e) {
 			throw new ServiceException(e);
 		}
-	}
-
-	@Override
-	public Boolean update(OrderHeaderDTO OrderHeaderDTO) throws ServiceException {
-
-		// TDO
-
-		return false;
-	}
-
-	/*
-	 * @Transactional
-	 * 
-	 * @Override public void delete(OrderHeaderDTO OrderHeaderDTO) throws
-	 * ServiceSecurityException { throw new ServiceSecurityException("No implementado, anular");
-	 * 
-	 * }
-	 */
-
-	@Override
-	public Boolean cancel(Long id, String motivo) throws ServiceException {
-		// TODO Auto-generated method stub
-		return null;
 	}
 
 	@Override
@@ -190,6 +228,68 @@ public class OrderHeaderServiceImpl implements OrderHeaderService {
 		}
 	}
 
+
+	@Transactional
+	@Override
+	public void updateOrderStatus(Long orderId, UpdateOrderStatusRequestDTO updateOrderStatusRequestDTO) throws ServiceException {
+	    try {
+	        OrderHeaderEntity order = orderHeaderRepository.findById(orderId)
+	                .orElseThrow(() -> new ServiceException("Pedido no encontrado"));
+
+	        StatusOrderEntity newStatusEntity = statusOrderRepository.findById(updateOrderStatusRequestDTO.getNewStatus())
+	                .orElseThrow(() -> new ServiceException("Estado no encontrado"));
+
+	        Long newStatusId = updateOrderStatusRequestDTO.getNewStatus();
+	        Long currentStatusId = order.getStatusOrder().getId();
+	        log.info("currentStatusId => {}", currentStatusId);
+
+	        // Convertimos de Long a Integer para que coincida con STATUS_MAP
+	        Integer currentStatusKey = currentStatusId.intValue();
+	        Integer newStatusKey = newStatusId.intValue();
+
+	        String currentStatus = STATUS_MAP.getOrDefault(currentStatusKey, "UNKNOWN");
+	        String newStatus = STATUS_MAP.getOrDefault(newStatusKey, "UNKNOWN");
+
+	        log.info("STATUS_MAP content => {}", STATUS_MAP);
+	        log.info("currentStatus => {} ({})", currentStatus, currentStatusId);
+	        log.info("newStatus => {} ({})", newStatus, newStatusId);
+
+	        if (!VALID_TRANSITIONS.getOrDefault(currentStatus, Set.of()).contains(newStatus)) {
+	            throw new ServiceException("Cambio de estado inválido: " + currentStatus + " → " + newStatus);
+	        }
+
+	        if (Set.of("Cancelada", "Devuelta", "Reembolsada").contains(newStatus)) {
+	            for (OrderDetailEntity detail : order.getOrderDetails()) {
+	                ProductEntity product = detail.getProduct();
+	                if (product != null) {
+	                    int newQuantity = product.getQuantity() + detail.getQuantity();
+	                    productRepository.updateQuantity(product.getId(), newQuantity);
+	                }
+	            }
+	        }
+
+	        order.setStatusOrder(newStatusEntity);
+	        orderHeaderRepository.save(order);
+	        
+	        String comment = updateOrderStatusRequestDTO.getComment();
+	        // Crear un log con el nuevo estado
+	        OrderLogsEntity orderLog = OrderLogsEntity.builder()
+	                .statusName(newStatus)
+	                .comment(comment != null && !comment.isEmpty() ? comment : "Cambio de estado: " + currentStatus + " → " + newStatus)
+	                .creationDate(LocalDateTime.now())
+	                .orderHeader(order)
+	                .build();
+
+	        orderLogsRepository.save(orderLog);
+	        
+	        log.info("Orden {} actualizada a estado {}", orderId, newStatus);
+
+	    } catch (Exception e) {
+	        throw new ServiceException("Error al actualizar el estado del pedido: " + e.getMessage(), e);
+	    }
+	}
+
+	
 	@Override
 	public Boolean addItem(OrderDetailDTO orderDetailDTO) throws ServiceException {
 		// TODO Auto-generated method stub
@@ -360,12 +460,33 @@ public class OrderHeaderServiceImpl implements OrderHeaderService {
 
 	private void updateStock(List<OrderDetailDTO> items) throws ServiceException {
 		for (OrderDetailDTO orderDetail : items) {
+			Integer quantityResult = orderDetail.getProduct().getQuantity() - orderDetail.getQuantity();
 			// Actualizar el stock
-			if (!productService.updateQuantity(orderDetail.getProduct().getId(), orderDetail.getQuantity())) {
+			if (!productService.updateQuantity(orderDetail.getProduct().getId(), quantityResult)) {
 				throw new ServiceException("Error al actualizar la cantidad solicitada del producto");
 			}
 
 		}
+	}
+	
+	@Transactional
+	@Override
+	public void delete(OrderHeaderDTO orderHeaderDTO) throws ServiceException {
+		log.info("OrderHeaderDTO => {}", orderHeaderDTO);
+		try {
+			/*
+			 * Optional<ProductoEntity> optProductoEntity =
+			 * productoRespository.findById(productoDTO.getId()); if
+			 * (!optProductoEntity.isEmpty()) { ProductoEntity prmProductoEntity =
+			 * optProductoEntity.get(); prmProductoEntity.setEstado("0");
+			 * productoRespository.save(prmProductoEntity); }
+			 */
+			orderHeaderRepository.delete(orderHeaderDTO.getId());
+
+		} catch (Exception e) {
+			throw new ServiceException(e);
+		}
+
 	}
 
 }

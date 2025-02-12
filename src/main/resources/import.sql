@@ -5,7 +5,7 @@ INSERT INTO category (short_name, full_name) VALUES ('TOOLS', 'Herramientas');
 INSERT INTO category (short_name, full_name) VALUES ('MED', 'Suministros Médicos');
 
 -- Insertar en la tabla product
-INSERT INTO product (name, price, quantity, warranty, category_id, status) VALUES ('Smartphone X1', 699.99, 50,'100%', 1, '1');
+INSERT INTO product (name, price, quantity, warranty, category_id, status) VALUES ('Smartphone X1', 199.99, 50,'100%', 1, '1');
 INSERT INTO product (name, price, quantity, warranty, category_id, status) VALUES ('Café Orgánico', 12.99, 200,'100%', 2, '1');
 INSERT INTO product (name, price, quantity, warranty, category_id, status) VALUES ('Taladro Eléctrico', 89.99, 30,'100%', 3, '1');
 INSERT INTO product (name, price, quantity, warranty, category_id, status) VALUES ('Kit de Primeros Auxilios', 29.99, 100,'100%', 4, '1');
@@ -53,3 +53,6 @@ INSERT INTO seg_user (id, user_name, password, name) VALUES (2, 'demo', '$2a$10$
 INSERT INTO seg_user_authority(user_id, authority_id) VALUES (1, 1);
 INSERT INTO seg_user_authority(user_id, authority_id) VALUES (1, 2);
 INSERT INTO seg_user_authority(user_id, authority_id) VALUES (2, 2);
+
+-- INSERT INTO order_header(id, igv, subtotal, total, client_id, order_date, status_id, vendor_id, gloss, status) VALUES (1, 126.00, 825.99);
+

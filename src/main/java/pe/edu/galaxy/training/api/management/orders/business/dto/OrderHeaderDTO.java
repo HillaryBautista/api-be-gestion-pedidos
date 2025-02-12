@@ -51,6 +51,8 @@ public class OrderHeaderDTO {
     private StatusOrderDTO statusOrder;
 
     private List<OrderDetailDTO> orderDetails;
+    
+    private List<OrderLogsDTO> orderLogs; 
 
     private String status = "1"; // Valor por defecto: '1'
 
@@ -133,6 +135,14 @@ public class OrderHeaderDTO {
 
     public void setOrderDetails(List<OrderDetailDTO> orderDetails) {
         this.orderDetails = orderDetails;
+    }
+
+    public List<OrderLogsDTO> getOrderLogs() {
+        return orderLogs;
+    }
+
+    public void setOrderLogs(List<OrderLogsDTO> orderLogs) {
+        this.orderLogs = orderLogs;
     }
 
     public String getStatus() {

@@ -68,4 +68,16 @@ public class ProductEntity {
 	void setStatus() {
 		this.status="1";
 	}
+	
+	public void increaseStock(int quantity) {
+	    this.quantity += quantity;
+	}
+
+	public void decreaseStock(int quantity) {
+	    if (this.quantity >= quantity) {
+	        this.quantity -= quantity;
+	    } else {
+	        throw new RuntimeException("Stock insuficiente para reducir " + quantity);
+	    }
+	}
 }

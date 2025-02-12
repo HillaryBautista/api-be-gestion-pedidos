@@ -69,6 +69,9 @@ public class OrderHeaderEntity {
     @OneToMany(mappedBy = "orderHeader", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<OrderDetailEntity> orderDetails;
 
+    @OneToMany(mappedBy = "orderHeader", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    private List<OrderLogsEntity> orderLogs;
+    
     @Column(name = "status", columnDefinition = "CHAR(1) DEFAULT '1'")
     private String status = "1"; // Valor por defecto: '1'
     
