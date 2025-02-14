@@ -1,3 +1,5 @@
+use order_management_db;
+
 -- Insertar en la tabla category
 INSERT INTO category (short_name, full_name) VALUES ('ELEC', 'Electrónica');
 INSERT INTO category (short_name, full_name) VALUES ('FOOD', 'Alimentos y Bebidas');
@@ -5,16 +7,16 @@ INSERT INTO category (short_name, full_name) VALUES ('TOOLS', 'Herramientas');
 INSERT INTO category (short_name, full_name) VALUES ('MED', 'Suministros Médicos');
 
 -- Insertar en la tabla product
-INSERT INTO product (name, price, quantity, warranty, category_id, status) VALUES ('Smartphone X1', 199.99, 50,'100%', 1, '1');
+INSERT INTO product (name, price, quantity, warranty, category_id, status) VALUES ('Smartphone X1', 99.99, 50,'100%', 1, '1');
 INSERT INTO product (name, price, quantity, warranty, category_id, status) VALUES ('Café Orgánico', 12.99, 200,'100%', 2, '1');
 INSERT INTO product (name, price, quantity, warranty, category_id, status) VALUES ('Taladro Eléctrico', 89.99, 30,'100%', 3, '1');
 INSERT INTO product (name, price, quantity, warranty, category_id, status) VALUES ('Kit de Primeros Auxilios', 29.99, 100,'100%', 4, '1');
 
 -- Insertar en la tabla vendor
-INSERT INTO vendor (paternal_surname, maternal_surname, first_name, email, document_type, document_number, status) VALUES ('Smith', 'A.', 'John', 'john.smith@tech.com', 'dni', '08911558', '1');
-INSERT INTO vendor (paternal_surname, maternal_surname, first_name, email, document_type, document_number,  status) VALUES ('Doe', 'B.', 'Jane', 'jane.doe@healthcare.com', 'dni', '18457923', '1');
-INSERT INTO vendor (paternal_surname, maternal_surname, first_name, email, document_type, document_number, status) VALUES ('Gomez', 'A.', 'Carlos', 'carlos.gomez@agro.com', 'dni', '48159623', '1');
-INSERT INTO vendor (paternal_surname, maternal_surname, first_name, email, document_type, document_number,  status) VALUES ('Schmidt', 'A.', 'Hans', 'hans.schmidt@tools.de', 'dni', '15247859', '1');
+INSERT INTO vendor (paternal_surname, maternal_surname, first_name, email, document_type, document_number, status) VALUES ('Smith', 'Anderson', 'John', 'john.smith@tech.com', 'dni', '08911558', '1');
+INSERT INTO vendor (paternal_surname, maternal_surname, first_name, email, document_type, document_number,  status) VALUES ('Doe', 'Bautista', 'Jane', 'jane.doe@healthcare.com', 'dni', '18457923', '1');
+INSERT INTO vendor (paternal_surname, maternal_surname, first_name, email, document_type, document_number, status) VALUES ('Gomez', 'Vela', 'Carlos', 'carlos.gomez@agro.com', 'dni', '48159623', '1');
+INSERT INTO vendor (paternal_surname, maternal_surname, first_name, email, document_type, document_number,  status) VALUES ('Schmidt', 'Gomez', 'Hans', 'hans.schmidt@tools.de', 'dni', '15247859', '1');
 
 -- Insertar en la tabla country
 INSERT INTO country (official_name, common_name, iso_code, notes, status) VALUES ('República Argentina', 'Argentina', 'ARG', 'América del Sur', '1');
@@ -29,10 +31,10 @@ INSERT INTO country (official_name, common_name, iso_code, notes, status) VALUES
 INSERT INTO country (official_name, common_name, iso_code, notes, status) VALUES ('República Bolivariana de Venezuela', 'Venezuela', 'VEN', 'América del Sur', '1');
 
 -- Insertar en la tabla client
-INSERT INTO client (business_name, ruc, address, phone_number, country_id, status) VALUES ('Andes Tech', '10101010101', '123 Calle Andes, Buenos Aires, Argentina', '54111234', 1, '1');
-INSERT INTO client (business_name, ruc, address, phone_number, country_id, status) VALUES ('Amazon Agro', '20202020202', '456 Camino Amazonas, São Paulo, Brasil', '55115678', 2, '1');
-INSERT INTO client (business_name, ruc, address, phone_number, country_id, status) VALUES ('Minería Atacama', '30303030303', '789 Avenida Desierto, Santiago, Chile', '56129012', 3, '1');
-INSERT INTO client (business_name, ruc, address, phone_number, country_id, status) VALUES ('Soluciones Andinas', '40404040404', '321 Avenida Andes, Quito, Ecuador', '59323456', 4, '1');
+INSERT INTO client (business_name, ruc, address, phone_number, country_id, status) VALUES ('Andes Tech', '10101010101', '123 Calle Andes, Buenos Aires, Argentina', '999586423', 1, '1');
+INSERT INTO client (business_name, ruc, address, phone_number, country_id, status) VALUES ('Amazon Agro', '20202020202', '456 Camino Amazonas, São Paulo, Brasil', '999651581', 2, '1');
+INSERT INTO client (business_name, ruc, address, phone_number, country_id, status) VALUES ('Minería Atacama', '30303030303', '789 Avenida Desierto, Santiago, Chile', '987485263', 3, '1');
+INSERT INTO client (business_name, ruc, address, phone_number, country_id, status) VALUES ('Soluciones Andinas', '40404040404', '321 Avenida Andes, Quito, Ecuador', '948562145', 4, '1');
 
 INSERT INTO status_order (short_name, full_name, status) VALUES ('PEND', 'Pendiente', '1'); -- La orden ha sido creada pero no procesada aún.
 INSERT INTO status_order (short_name, full_name, status) VALUES ('PROC', 'Procesando', '1'); -- La orden está en proceso de preparación.
@@ -54,5 +56,10 @@ INSERT INTO seg_user_authority(user_id, authority_id) VALUES (1, 1);
 INSERT INTO seg_user_authority(user_id, authority_id) VALUES (1, 2);
 INSERT INTO seg_user_authority(user_id, authority_id) VALUES (2, 2);
 
--- INSERT INTO order_header(id, igv, subtotal, total, client_id, order_date, status_id, vendor_id, gloss, status) VALUES (1, 126.00, 825.99);
+INSERT INTO order_header(id, igv, subtotal, total, client_id, order_date, status_id, vendor_id, gloss, status) VALUES (1, 36.00, 199.99, 235.99, 1, '2025-02-10 23:27:45.490075', 1, 1, 'glosa 11/02/2025, 23:38:30', '1');
+INSERT INTO order_detail(id, igv, price, quantity, subtotal, total, order_id, product_id, status) VALUES (1, 36.00, 199.99, 1, 199.99, 235.99, 1, 1, '1');
+INSERT INTO order_logs(id, creation_date, order_id, status_name, comment) VALUES (1, '2025-02-10 23:27:45.490075', 1, 'Pendiente', 'Se creó el pedido');
 
+DROP TABLE `order_management_db`.`view_orders`;
+
+-- correr el create view qu está en scripts

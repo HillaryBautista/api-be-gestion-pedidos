@@ -472,21 +472,37 @@ public class OrderHeaderServiceImpl implements OrderHeaderService {
 	@Transactional
 	@Override
 	public void delete(OrderHeaderDTO orderHeaderDTO) throws ServiceException {
-		log.info("OrderHeaderDTO => {}", orderHeaderDTO);
-		try {
-			/*
-			 * Optional<ProductoEntity> optProductoEntity =
-			 * productoRespository.findById(productoDTO.getId()); if
-			 * (!optProductoEntity.isEmpty()) { ProductoEntity prmProductoEntity =
-			 * optProductoEntity.get(); prmProductoEntity.setEstado("0");
-			 * productoRespository.save(prmProductoEntity); }
-			 */
-			orderHeaderRepository.delete(orderHeaderDTO.getId());
+	    log.info("OrderHeaderDTO => {}", orderHeaderDTO);
+	    try {
+	        // Obtener la entidad OrderHeaderEntity usando el ID
+	        Optional<OrderHeaderEntity> optOrderHeaderEntity = orderHeaderRepository.findById(orderHeaderDTO.getId());
+	        if (optOrderHeaderEntity.isEmpty()) {
+	            throw new ServiceException("Pedido no encontrado");
+	        }
+	        OrderHeaderEntity orderHeaderEntity = optOrderHeaderEntity.get();
 
-		} catch (Exception e) {
-			throw new ServiceException(e);
-		}
+	        // Iterar sobre los detalles del pedido
+	        for (OrderDetailEntity orderDetail : orderHeaderEntity.getOrderDetails()) {
+	            ProductEntity productEntity = orderDetail.getProduct();
+	            if (productEntity != null) {
+	                // Restaurar el stock sumando la cantidad de productos eliminados
+	                Integer updatedQuantity = productEntity.getQuantity() + orderDetail.getQuantity();
+	                if (!productService.updateQuantity(productEntity.getId(), updatedQuantity)) {
+	                    throw new ServiceException("Error al restaurar la cantidad del producto durante la eliminación");
+	                }
+	                log.info("Producto con ID {}: Stock restaurado. Cantidad actual: {}", productEntity.getId(), updatedQuantity);
+	            }
+	        }
 
+	        // Eliminar la orden del repositorio
+	        orderHeaderRepository.delete(orderHeaderEntity);
+
+	        log.info("Pedido eliminado correctamente: {}", orderHeaderDTO.getId());
+
+	    } catch (Exception e) {
+	        throw new ServiceException("Error al eliminar el pedido: " + e.getMessage(), e);
+	    }
 	}
+
 
 }

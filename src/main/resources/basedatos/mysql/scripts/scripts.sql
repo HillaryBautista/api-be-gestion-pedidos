@@ -102,6 +102,30 @@ CREATE INDEX idx_order_header_client_id ON order_header(client_id);
 CREATE INDEX idx_order_header_vendor_id ON order_header(vendor_id);
 CREATE INDEX idx_order_detail_order_id ON order_detail(order_id);
 
+create table seg_user (
+    id int not null,
+    name varchar(255) default null unique,
+    password varchar(255) default null,
+    user_name varchar(255) default null unique,
+    primary key (id)
+);
+
+create table seg_authority (
+    id int not null,
+    name varchar(255) default null unique,
+    primary key (id)
+);
+
+create table seg_user_authority (
+    user_id int not null,
+    authority_id int not null,
+    primary key (user_id, authority_id),
+    constraint fk_user_authority_authority foreign key (authority_id) references seg_authority (id),
+    constraint fk_user_authority_user foreign key (user_id) references seg_user (id)
+);
+
+
+
 drop view view_orders;
 create view view_orders
 as
@@ -143,25 +167,3 @@ ORDER BY
     ohea.id DESC;
 select * from view_orders;
 select * from view_orders where gloss like '%v2%';
-
-create table seg_user (
-    id int not null,
-    name varchar(255) default null unique,
-    password varchar(255) default null,
-    user_name varchar(255) default null unique,
-    primary key (id)
-);
-
-create table seg_authority (
-    id int not null,
-    name varchar(255) default null unique,
-    primary key (id)
-);
-
-create table seg_user_authority (
-    user_id int not null,
-    authority_id int not null,
-    primary key (user_id, authority_id),
-    constraint fk_user_authority_authority foreign key (authority_id) references seg_authority (id),
-    constraint fk_user_authority_user foreign key (user_id) references seg_user (id)
-);
